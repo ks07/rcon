@@ -54,14 +54,14 @@ public class HTTPListener {
 
                 byte[] rconResp = this.rcon.sendRequest(packet);
 
-                for (int i = 0; i < rconResp.length; i++) {
-                    if (i >= 12) {
-                        // Assume no null bytes in string.
-                        if (rconResp[i] != (byte) 0) {
-                            respBody.write(rconResp[i]);
-                        } else {
-                            break;
-                        }
+                if (rconResp.length > 12) {
+                    for (int i = 12; i < rconResp.length; i++) {
+                            // Assume no null bytes in string.
+                            if (rconResp[i] != (byte) 0) {
+                                respBody.write(rconResp[i]);
+                            } else {
+                                break;
+                            }
                     }
                 }
 
@@ -80,7 +80,11 @@ public class HTTPListener {
         private String getCmd(String query) {
             String[] cmds = query.split("cmd=");
 
-            return cmds[1];
+            if (cmds.length > 1) {
+                return cmds[1];
+            } else {
+                return "";
+            }
         }
     }
 }
