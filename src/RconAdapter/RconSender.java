@@ -182,15 +182,15 @@ public class RconSender implements Runnable {
         bb.putInt(packetID);
         bb.putInt(cmd.value);
 
-        // 10 byte minimum capacity - 2 x 4 + 2 bytes minimum.
-        ArrayList<Byte> bl = new ArrayList<Byte>(10);
+        // 26 byte minimum capacity -> 3 x 4 + 2 bytes minimum, plus ~10 character average response.
+        ArrayList<Byte> bl = new ArrayList<Byte>(26);
 
         // Have to wrap bytes.
         for (byte b : bb.array()) {
             bl.add(new Byte(b));
         }
 
-        // Concatenate the first string param.
+        // Concatenate the string param.
         for (byte b : param1.getBytes()) {
             bl.add(new Byte(b));
         }
