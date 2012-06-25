@@ -30,8 +30,8 @@ public class HTTPListener {
     }
 
     public void start() {
-        this.http.start();
         this.rconThread.start();
+        this.http.start();
     }
 
     private class RconHandler implements HttpHandler {
@@ -42,7 +42,7 @@ public class HTTPListener {
         }
 
         public void handle(HttpExchange he) throws IOException {
-            if (he.getRequestMethod().equalsIgnoreCase("GET")) {
+            if (he.getRequestMethod().equalsIgnoreCase("GET") && he.getRequestURI().getQuery() != null && he.getRequestURI().getQuery().startsWith("cmd=")) {
                 String command = getCmd(he.getRequestURI().getQuery());
                 byte[] packet = this.rcon.makePacket(command);
 
@@ -79,6 +79,7 @@ public class HTTPListener {
 
         private String getCmd(String query) {
             String[] cmds = query.split("cmd=");
+
             return cmds[1];
         }
     }

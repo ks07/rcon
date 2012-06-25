@@ -37,7 +37,7 @@ public class RconSender implements Runnable {
     public void run() {
         try {
             byte[] a = makePacket(1, Command.Auth, password);
-            byte[] c = makePacket(2, Command.Exec, "say Connected");
+            byte[] c = makePacket(2, Command.Exec, "ping");
 
             byte[] buffer = new byte[2048];
 
@@ -56,7 +56,7 @@ public class RconSender implements Runnable {
                         // Every 60 seconds send a simple "keepalive".
                         Thread.sleep(60000);
 
-                        c = makePacket(this.getNextID(), Command.Exec, "say ping");
+                        c = makePacket(this.getNextID(), Command.Exec, "ping");
                         buffer = this.sendRequest(c);
                     } catch (InterruptedException inex) {
                         continue;
@@ -64,6 +64,8 @@ public class RconSender implements Runnable {
             }
         } catch (Exception ex) {
             Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println("Failed to connect to Rcon: " + ex.getMessage());
+            System.exit(1);
         }
     }
 
@@ -71,7 +73,7 @@ public class RconSender implements Runnable {
         boolean outcome = false;
 
         byte[] a = makePacket(1, Command.Auth, password);
-        byte[] b = makePacket(2, Command.Exec, "say Re-connected");
+        byte[] b = makePacket(2, Command.Exec, "ping");
 
         // Reset the packet ID.
         synchronized(this.IDLock) {
@@ -173,6 +175,7 @@ public class RconSender implements Runnable {
         return makePacket(this.getNextID(), Command.Exec, command);
     }
 
+    // This method will not block if used simultaneously with another thread.
     private static byte[] makePacket(int packetID, Command cmd, String param1) {
         ByteBuffer bb = ByteBuffer.allocate(8);
         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -210,31 +213,6 @@ public class RconSender implements Runnable {
         }
 
         return ret;
-    }
-
-//    private boolean auth() {
-//        try {
-//            this.rconSock = new Socket(this.rconHost, rconPort);
-//            this.rconSock.setSoTimeout(50000);
-//            this.out = this.rconSock.getOutputStream();
-//            this.in = this.rconSock.getInputStream();
-//
-//            this.write(Command.Auth.value, this.password, "");
-//            //Response[] resp = this.read();
-//
-//            //return (resp[0].ID != -1);
-//            return true;
-//        } catch (Exception ex) {
-//            Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
-//            return false;
-//        }
-//    }
-
-    public static void printHex(Byte[] arr) {
-        for (byte b : arr) {
-            System.out.print(Integer.toHexString(b));
-            System.out.print(",");
-        }
     }
 
     public static String bytesToHex(byte[] bytes) {
