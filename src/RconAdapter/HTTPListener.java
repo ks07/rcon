@@ -56,12 +56,16 @@ public class HTTPListener {
 
                 if (rconResp.length > 12) {
                     for (int i = 12; i < rconResp.length; i++) {
+                        if (rconResp[i] == (byte) 0xA7) {
+                            // 0xA7 is the simoleon/section char - colour code.
+                            // Skip this byte, and the following byte.
+                            i++;
+                        } else if (rconResp[i] != (byte) 0) {
                             // Assume no null bytes in string.
-                            if (rconResp[i] != (byte) 0) {
-                                respBody.write(rconResp[i]);
-                            } else {
-                                break;
-                            }
+                            respBody.write(rconResp[i]);
+                        } else {
+                            break;
+                        }
                     }
                 }
 
