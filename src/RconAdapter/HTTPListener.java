@@ -85,7 +85,8 @@ public class HTTPListener {
             String[] cmds = query.split("cmd=");
 
             if (cmds.length > 1) {
-                return cmds[1];
+                // Java doesn't interpret '+' as a space
+                return cmds[1].replace("+", " ");
             } else {
                 return "";
             }
