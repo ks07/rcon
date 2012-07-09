@@ -13,7 +13,10 @@ import java.util.logging.Logger;
 public class RconSender implements Runnable {
     private final String rconHost;
     private final int rconPort;
-    private final String password;
+
+    private final byte[] authPacket;
+    // Command to send after connect to check if connection was succesful.
+    private static final byte[] initPacket = makePacket(2, Command.Exec, "ping");
 
     // MUST synchronize on this lock before any access to rconSock!
     private final Object sockLock = new Object();
@@ -31,33 +34,24 @@ public class RconSender implements Runnable {
     public RconSender(String rconAdd, int rconPort, String password) {
         this.rconHost = rconAdd;
         this.rconPort = rconPort;
-        this.password = password;
+        this.authPacket = makePacket(1, Command.Auth, password);
     }
 
     public void run() {
         try {
-            byte[] a = makePacket(1, Command.Auth, password);
-            byte[] c = makePacket(2, Command.Exec, "ping");
-
-            byte[] buffer = new byte[2048];
-
             this.rconSock = new Socket(this.rconHost, rconPort);
             this.rconSock.setSoTimeout(50000);
-            OutputStream out = this.rconSock.getOutputStream();
-            InputStream in = this.rconSock.getInputStream();
 
-            out.write(a);
-            in.read(buffer);
-            out.write(c);
-            in.read(buffer);
+            this.sendRequest(this.authPacket);
+            this.sendRequest(initPacket);
 
             while (true) {
                     try {
                         // Every 60 seconds send a simple "keepalive".
                         Thread.sleep(60000);
 
-                        c = makePacket(this.getNextID(), Command.Exec, "ping");
-                        buffer = this.sendRequest(c);
+                        byte[] pingPacket = makePacket(this.getNextID(), Command.Exec, "ping");
+                        this.sendRequest(pingPacket);
                     } catch (InterruptedException inex) {
                         continue;
                     }
@@ -72,9 +66,6 @@ public class RconSender implements Runnable {
     private boolean reconnect() {
         boolean outcome = false;
 
-        byte[] a = makePacket(1, Command.Auth, password);
-        byte[] b = makePacket(2, Command.Exec, "ping");
-
         // Reset the packet ID.
         synchronized(this.IDLock) {
             this.packetID = 3;
@@ -85,19 +76,11 @@ public class RconSender implements Runnable {
                 if (this.rconSock != null && this.rconSock.isConnected() && !this.rconSock.isClosed()) {
                     outcome = true;
                 } else {
-
-
-                    byte[] buffer = new byte[2048];
-
                     this.rconSock = new Socket(this.rconHost, rconPort);
                     this.rconSock.setSoTimeout(50000);
-                    OutputStream out = this.rconSock.getOutputStream();
-                    InputStream in = this.rconSock.getInputStream();
 
-                    out.write(a);
-                    in.read(buffer);
-                    out.write(b);
-                    in.read(buffer);
+                    this.sendRequest(authPacket);
+                    this.sendRequest(initPacket);
                     
                     outcome = true;
                 }
