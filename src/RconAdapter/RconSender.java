@@ -166,42 +166,18 @@ public class RconSender implements Runnable {
 
     // This method will not block if used simultaneously with another thread.
     private static byte[] makePacket(int packetID, Command cmd, String param) {
-        ByteBuffer bb = ByteBuffer.allocate(8);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
+        byte[] paramBytes = param.getBytes();
+        int length = 10 + paramBytes.length;
+        
+        ByteBuffer bb = ByteBuffer.allocate(length + 4).order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(length);
         bb.putInt(packetID);
         bb.putInt(cmd.value);
 
-        // 26 byte minimum capacity -> 3 x 4 + 2 bytes minimum, plus ~10 character average response.
-        ArrayList<Byte> bl = new ArrayList<Byte>(26);
+        bb.put(paramBytes);
+        bb.putShort((short) 0);
 
-        // Have to wrap bytes.
-        for (byte b : bb.array()) {
-            bl.add(new Byte(b));
-        }
-
-        // Concatenate the string param.
-        for (byte b : param.getBytes()) {
-            bl.add(new Byte(b));
-        }
-
-        // Terminate with 2 null bytes.
-        bl.add((byte)0);
-        bl.add((byte)0);
-
-        // Prefix the message size. Use big endian here, as the byte order is reversed by the for loop.
-        bb = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-        bb.putInt(bl.size());
-        for (byte b : bb.array()) {
-            bl.add(0, new Byte(b));
-        }
-
-        byte[] ret = new byte[bl.size()];
-
-        for (int i = 0; i < bl.size(); i++) {
-            ret[i] = bl.get(i).byteValue();
-        }
-
-        return ret;
+        return bb.array();
     }
 
     private enum Command {
