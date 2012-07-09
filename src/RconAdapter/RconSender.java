@@ -39,11 +39,7 @@ public class RconSender implements Runnable {
 
     public void run() {
         try {
-            this.rconSock = new Socket(this.rconHost, rconPort);
-            this.rconSock.setSoTimeout(50000);
-
-            this.sendRequest(this.authPacket);
-            this.sendRequest(initPacket);
+            this.connect();
 
             while (true) {
                     try {
@@ -63,6 +59,16 @@ public class RconSender implements Runnable {
         }
     }
 
+    private void connect() throws IOException {
+        synchronized(this.sockLock) {
+            this.rconSock = new Socket(this.rconHost, rconPort);
+            this.rconSock.setSoTimeout(50000);
+
+            this.writePacket(authPacket);
+            this.writePacket(initPacket);
+        }
+    }
+
     private boolean reconnect() {
         boolean outcome = false;
 
@@ -73,17 +79,11 @@ public class RconSender implements Runnable {
 
         synchronized(this.sockLock) {
             try {
-                if (this.rconSock != null && this.rconSock.isConnected() && !this.rconSock.isClosed()) {
-                    outcome = true;
-                } else {
-                    this.rconSock = new Socket(this.rconHost, rconPort);
-                    this.rconSock.setSoTimeout(50000);
-
-                    this.sendRequest(authPacket);
-                    this.sendRequest(initPacket);
-                    
-                    outcome = true;
+                if (this.rconSock == null || !this.rconSock.isConnected() || this.rconSock.isClosed()) {
+                    this.connect();
                 }
+
+                outcome = true;
             } catch (IOException e) {
                 this.rconSock = null;
                 outcome = false;
@@ -94,17 +94,9 @@ public class RconSender implements Runnable {
     }
 
     public byte[] sendRequest(byte[] packet) {
-        byte[] inputBuffer = new byte[2048];
-
         synchronized(sockLock) {
             try {
-                OutputStream out = this.rconSock.getOutputStream();
-                InputStream in = this.rconSock.getInputStream();
-
-                out.write(packet);
-                in.read(inputBuffer);
-                
-                return inputBuffer;
+                return this.writePacket(packet);
             } catch (IOException ex) {
                 if (this.rconSock != null && this.rconSock.isConnected()) {
                     try {
@@ -152,6 +144,20 @@ public class RconSender implements Runnable {
         }
 
         return this.sendRequest(packet);
+    }
+
+    private byte[] writePacket(byte[] packet) throws IOException {
+        byte[] inputBuffer = new byte[2048];
+
+        synchronized(sockLock) {
+            OutputStream out = this.rconSock.getOutputStream();
+            InputStream in = this.rconSock.getInputStream();
+
+            out.write(packet);
+            in.read(inputBuffer);
+        }
+
+        return inputBuffer;
     }
 
     public byte[] makePacket(String command) {
