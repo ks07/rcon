@@ -40,22 +40,22 @@ public class RconSender implements Runnable {
     public void run() {
         try {
             this.connect();
-
-            while (true) {
-                    try {
-                        // Every 60 seconds send a simple "keepalive".
-                        Thread.sleep(60000);
-
-                        byte[] pingPacket = makePacket(this.getNextID(), Command.Exec, "ping");
-                        this.sendRequest(pingPacket);
-                    } catch (InterruptedException inex) {
-                        continue;
-                    }
-            }
         } catch (Exception ex) {
             Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
             System.err.println("Failed to connect to Rcon: " + ex.getMessage());
             System.exit(1);
+        }
+
+        while (true) {
+            try {
+                // Every 60 seconds send a simple "keepalive".
+                Thread.sleep(60000);
+
+                byte[] pingPacket = makePacket(this.getNextID(), Command.Exec, "ping");
+                this.sendRequest(pingPacket);
+            } catch (InterruptedException inex) {
+                continue;
+            }
         }
     }
 
