@@ -165,7 +165,7 @@ public class RconSender implements Runnable {
     }
 
     // This method will not block if used simultaneously with another thread.
-    private static byte[] makePacket(int packetID, Command cmd, String param1) {
+    private static byte[] makePacket(int packetID, Command cmd, String param) {
         ByteBuffer bb = ByteBuffer.allocate(8);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.putInt(packetID);
@@ -180,7 +180,7 @@ public class RconSender implements Runnable {
         }
 
         // Concatenate the string param.
-        for (byte b : param1.getBytes()) {
+        for (byte b : param.getBytes()) {
             bl.add(new Byte(b));
         }
 
