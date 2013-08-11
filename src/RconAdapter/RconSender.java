@@ -36,13 +36,13 @@ public class RconSender implements Runnable {
         this.authPacket = makePacket(1, Command.Auth, password);
     }
 
+    @Override
     public void run() {
         try {
             this.connect();
         } catch (Exception ex) {
             Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
             System.err.println("Failed to connect to Rcon: " + ex.getMessage());
-            System.exit(1);
         }
 
         while (true) {

@@ -1,28 +1,60 @@
 package RconAdapter;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Main {
-    public static void main(String[] args) {
-        if (args.length == 3) {
-            String host = args[0];
-            int port = Integer.parseInt(args[1]);
-            String password = args[2];
-
+    private static final File PROPERTIES_FILE = new File("config.properties");
+    
+    // Don't run this where it can't write. Because I'm lazy.
+    public static void main(String[] args) throws IOException {
+        if (System.getProperty("os.name").contains("inux")) {
             savePID("rcon.pid");
-
-            HTTPListener http = new HTTPListener(host, port, password);
-            http.start();
-        } else {
-            System.err.println("Invalid parameters.");
-            System.err.println("Usage: java -jar RconAdapter.jar <dest host> <dest port> <password>");
         }
-    }
+        
+        if (!PROPERTIES_FILE.exists()) {
+            InputStream in = Main.class.getResourceAsStream(PROPERTIES_FILE.getName());
+            OutputStream out = new FileOutputStream(PROPERTIES_FILE);
+            byte[] buff = new byte[1024];
+            int len;
 
+            while ((len = in.read(buff)) >= 0) {
+                out.write(buff, 0, len);
+            }
+
+            out.flush();
+            out.close();
+            in.close();
+        }
+        
+        HashMap<String, String> servers = new HashMap<String, String>();
+
+        BufferedReader br = new BufferedReader(new FileReader(PROPERTIES_FILE));
+        Properties prop = new Properties();
+        prop.load(br);
+
+        for (Entry e : prop.entrySet()) {
+            if (! (e.getKey().equals("bind") || e.getKey().equals("defkey")) ) {
+                servers.put((String)e.getKey(), (String)e.getValue());
+            }
+        }
+
+        HTTPListener http = new HTTPListener(prop.getProperty("bind", "localhost:8181"), servers, prop.getProperty("defkey", "survival"));
+        http.start();
+    }
+    
     private static void savePID(String filename) {
         Integer pid = -1;
 
