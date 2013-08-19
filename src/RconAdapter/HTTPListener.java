@@ -48,6 +48,7 @@ public class HTTPListener {
         for (Map.Entry<String, String> targ : confTargets.entrySet()) {
             try {
                 URI u = new URI("rcon://" + targ.getValue());
+                System.out.println("rcon://" + targ.getValue() + "###" + u.getHost() + "###" + u.getPort() + "###" + u.getRawUserInfo());
                 RconSender rs = new RconSender(u.getHost(), u.getPort(), u.getRawUserInfo());
                 Thread t = new Thread(rs, "rcon");
 

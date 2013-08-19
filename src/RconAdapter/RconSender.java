@@ -43,6 +43,7 @@ public class RconSender implements Runnable {
         } catch (Exception ex) {
             Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
             System.err.println("Failed to connect to Rcon: " + ex.getMessage());
+            System.exit(1);
         }
 
         while (true) {
@@ -65,6 +66,11 @@ public class RconSender implements Runnable {
 
             this.writePacket(authPacket);
             this.writePacket(initPacket);
+//            byte[] buff = new byte[1024];
+//            this.rconSock.getInputStream().read(buff);
+//            System.out.println(new String(buff));
+//            this.sendRequest(this.makePacket("say test"));
+            System.out.println("connected");
         }
     }
 
@@ -106,6 +112,7 @@ public class RconSender implements Runnable {
                 }
 
                 Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
+                System.exit(1);
                 Logger.getLogger(RconSender.class.getName()).log(Level.INFO, "Reconnecting to server.");
             }
         }
