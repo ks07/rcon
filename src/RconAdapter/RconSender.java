@@ -41,8 +41,7 @@ public class RconSender implements Runnable {
         try {
             this.connect();
         } catch (Exception ex) {
-            Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
-            System.err.println("Failed to connect to Rcon: " + ex.getMessage());
+            Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, "Failed to connect to Rcon", ex);
             System.exit(1);
         }
 
@@ -62,14 +61,10 @@ public class RconSender implements Runnable {
     private void connect() throws IOException {
         synchronized(this.sockLock) {
             this.rconSock = new Socket(this.rconHost, rconPort);
-            this.rconSock.setSoTimeout(50000);
+            this.rconSock.setSoTimeout(30000);
 
             this.writePacket(authPacket);
             this.writePacket(initPacket);
-//            byte[] buff = new byte[1024];
-//            this.rconSock.getInputStream().read(buff);
-//            System.out.println(new String(buff));
-//            this.sendRequest(this.makePacket("say test"));
             System.out.println("connected");
         }
     }
@@ -110,10 +105,8 @@ public class RconSender implements Runnable {
                         Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex1);
                     }
                 }
-
-                Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex);
-                System.exit(1);
-                Logger.getLogger(RconSender.class.getName()).log(Level.INFO, "Reconnecting to server.");
+                
+                Logger.getLogger(RconSender.class.getName()).log(Level.INFO, "Reconnecting to server.", ex);
             }
         }
         
@@ -153,14 +146,19 @@ public class RconSender implements Runnable {
     }
 
     private byte[] writePacket(byte[] packet) throws IOException {
-        byte[] inputBuffer = new byte[2048];
+        byte[] inputBuffer = new byte[1460];
 
         synchronized(sockLock) {
             OutputStream out = this.rconSock.getOutputStream();
             InputStream in = this.rconSock.getInputStream();
 
+//            System.out.println("T: " + bytesToHex(packet));
             out.write(packet);
+//            System.out.println("Tc Status:" + rconSock.isClosed());
+            
             in.read(inputBuffer);
+//            System.out.println("Rx: " + bytesToHex(inputBuffer));
+//            System.out.println("Rc Status:" + rconSock.isClosed());
         }
 
         return inputBuffer;
@@ -181,9 +179,23 @@ public class RconSender implements Runnable {
         bb.putInt(cmd.value);
 
         bb.put(paramBytes);
-        bb.putShort((short) 0);
+        bb.put((byte)0);
+        bb.put((byte)0);
 
         return bb.array();
+    }
+
+    final protected static char[] hexArray = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 3];
+        int v;
+        for ( int j = 0; j < bytes.length; j++ ) {
+            v = bytes[j] & 0xFF;
+            hexChars[j * 3] = hexArray[v >>> 4];
+            hexChars[j * 3 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 3 + 2] = ',';
+        }
+        return new String(hexChars);
     }
 
     private enum Command {
