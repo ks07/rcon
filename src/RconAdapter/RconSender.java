@@ -20,7 +20,7 @@ public class RconSender implements Runnable {
     // MUST synchronize on this lock before any access to rconSock!
     private final Object sockLock = new Object();
     private Socket rconSock;
-
+    
     // MUST synchronize on this lock before any access to packetID!
     private final Object IDLock = new Object();
     private int packetID = 3; // 1 and 2 used by initialisation.
@@ -40,9 +40,8 @@ public class RconSender implements Runnable {
     public void run() {
         try {
             this.connect();
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, "Failed to connect to Rcon", ex);
-            System.exit(1);
         }
 
         while (true) {
@@ -60,12 +59,13 @@ public class RconSender implements Runnable {
 
     private void connect() throws IOException {
         synchronized(this.sockLock) {
+            Logger.getLogger(RconSender.class.getName()).info("Connecting to Rcon...");
             this.rconSock = new Socket(this.rconHost, rconPort);
             this.rconSock.setSoTimeout(30000);
 
             this.writePacket(authPacket);
             this.writePacket(initPacket);
-            System.out.println("connected");
+            Logger.getLogger(RconSender.class.getName()).info("Rcon connection established.");
         }
     }
 
@@ -152,13 +152,17 @@ public class RconSender implements Runnable {
             OutputStream out = this.rconSock.getOutputStream();
             InputStream in = this.rconSock.getInputStream();
 
-//            System.out.println("T: " + bytesToHex(packet));
+            // Unfortunately, we don't have lazy evaluation here...
+            if (Logger.getGlobal().getLevel().intValue() <= Level.FINEST.intValue()) {
+                Logger.getLogger(RconSender.class.getName()).finest("Tx: " + bytesToHex(packet));
+            }
             out.write(packet);
-//            System.out.println("Tc Status:" + rconSock.isClosed());
             
             in.read(inputBuffer);
-//            System.out.println("Rx: " + bytesToHex(inputBuffer));
-//            System.out.println("Rc Status:" + rconSock.isClosed());
+            System.out.println("Rx: " + bytesToHex(inputBuffer));
+            if (Logger.getGlobal().getLevel().intValue() <= Level.FINEST.intValue()) {
+                Logger.getLogger(RconSender.class.getName()).finest("Rx: " + bytesToHex(inputBuffer));
+            }
         }
 
         return inputBuffer;

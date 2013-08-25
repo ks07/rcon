@@ -39,18 +39,18 @@ public class HTTPListener {
                 http = HttpServer.create(new InetSocketAddress(bindURI.getHost(), bindURI.getPort()), 10);
                 http.setExecutor(Executors.newSingleThreadExecutor());
             }
-        } catch (IOException ex) {
-            Logger.getLogger(HTTPListener.class.getName()).log(Level.SEVERE, null, ex);
         } catch (URISyntaxException ex) {
-            Logger.getLogger(HTTPListener.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(HTTPListener.class.getName()).log(Level.SEVERE, "Invalid bind configuration", ex);
+        } catch (IOException ex) {
+            Logger.getLogger(HTTPListener.class.getName()).log(Level.SEVERE, "Failed to start HTTP listener", ex);
         }
         
         for (Map.Entry<String, String> targ : confTargets.entrySet()) {
             try {
                 URI u = new URI("rcon://" + targ.getValue());
-                System.out.println("rcon://" + targ.getValue() + "###" + u.getHost() + "###" + u.getPort() + "###" + u.getRawUserInfo());
+                Logger.getLogger(HTTPListener.class.getName()).fine("Adding connection '" + targ.getKey() + "' to: " + u.getHost() + ":" + u.getPort() + " pass:" + u.getRawUserInfo());
                 RconSender rs = new RconSender(u.getHost(), u.getPort(), u.getRawUserInfo());
-                Thread t = new Thread(rs, "rcon");
+                Thread t = new Thread(rs, "rcon_" + targ.getKey());
 
                 RconTarget rt = new RconTarget(t, rs);
                 RconHandler rh = new RconHandler(rt);
@@ -75,10 +75,6 @@ public class HTTPListener {
         this.http.start();
     }
 
-    private String getKey(String path) {
-        return path.replace('/', ' ').replace("+", " ").trim();
-    }
-
     private class RconHandler implements HttpHandler {
         private final RconTarget rcon;
         
@@ -90,22 +86,26 @@ public class HTTPListener {
         public void handle(HttpExchange he) throws IOException {
             if (he.getRequestMethod().equalsIgnoreCase("GET") && he.getRequestURI().getQuery() != null && he.getRequestURI().getQuery().startsWith("cmd=")) {
                 String command = getCmd(he.getRequestURI().getQuery());
-                String key = getKey(he.getRequestURI().getPath());
                 byte[] packet = rcon.sender.makePacket(command);
 
                 Headers respHeaders = he.getResponseHeaders();
                 respHeaders.set("Content-Type", "text/plain");
+
+                if ("/".equals(he.getHttpContext().getPath())) {
+                    Logger.getLogger(RconHandler.class.getName()).warning("Received request for unknown/unspecified key, using default.");
+                }
+
                 he.sendResponseHeaders(200, 0);
-                
+
                 OutputStream respBody = he.getResponseBody();
 
                 byte[] rconResp = rcon.sender.sendRequest(packet);
 
                 if (rconResp.length > 12) {
                     for (int i = 12; i < rconResp.length; i++) {
-                        if (rconResp[i] == (byte) 0xA7) {
-                            // 0xA7 is the simoleon/section char - colour code.
-                            // Skip this byte, and the following byte.
+                        if (rconResp[i] == (byte) 0xC2 && rconResp[++i] == (byte) 0xA7) {
+                            // 0xC2 0xA7 is the simoleon/section char - colour code.
+                            // Skip these bytes, and the following byte.
                             i++;
                         } else if (rconResp[i] != (byte) 0) {
                             // Assume no null bytes in string.
