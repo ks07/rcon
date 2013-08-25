@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 
 public class Main {
     private static final File PROPERTIES_FILE = new File("config.properties");
+    static final Logger LOG = Logger.getGlobal();
     
     // Don't run this where it can't write. Because I'm lazy.
     public static void main(String[] args) throws IOException {
@@ -35,7 +36,6 @@ public class Main {
                 out.write(buff, 0, len);
             }
 
-            out.flush();
             out.close();
             in.close();
         }
@@ -49,26 +49,27 @@ public class Main {
         String logLevel = prop.getProperty("loglevel", "1");
         
         // Disable all default log handlers.
-        Handler[] handlers = Logger.getGlobal().getHandlers();
+        LOG.setUseParentHandlers(false);
+        Handler[] handlers = LOG.getHandlers();
         for (Handler h : handlers) {
-            Logger.getGlobal().removeHandler(h);
+            LOG.removeHandler(h);
         }
         
         Handler ch = new ConsoleHandler();
         ch.setLevel(Level.ALL);
-        Logger.getGlobal().addHandler(ch);
+        LOG.addHandler(ch);
         
         if ("0".equals(logLevel)) {
-            Logger.getGlobal().setLevel(Level.WARNING);
+            LOG.setLevel(Level.WARNING);
         } else if ("2".equals(logLevel)) {
-            Logger.getGlobal().setLevel(Level.FINE);
+            LOG.setLevel(Level.FINE);
         } else if ("3".equals(logLevel)) {
-            Logger.getGlobal().setLevel(Level.ALL);
+            LOG.setLevel(Level.ALL);
         } else {
-            Logger.getGlobal().setLevel(Level.INFO);
+            LOG.setLevel(Level.INFO);
         }
         
-        Logger.getGlobal().info("Logging level: " + Logger.getGlobal().getLevel());
+        LOG.info("Logging level: " + Logger.getGlobal().getLevel());
         
         for (Entry e : prop.entrySet()) {
             if (! (e.getKey().equals("bind") || e.getKey().equals("defkey") || e.getKey().equals("loglevel")) ) {
@@ -86,7 +87,7 @@ public class Main {
         try {
             pid = Integer.parseInt((new File("/proc/self")).getCanonicalFile().getName());
         } catch (Exception ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Could not determine PID", ex);
+            LOG.log(Level.SEVERE, "Could not determine PID", ex);
         }
 
         FileWriter fw = null;
@@ -98,7 +99,7 @@ public class Main {
             fw.write(pid.toString());
             fw.close();
         } catch (IOException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Failed to write PID", ex);
+            LOG.log(Level.SEVERE, "Failed to write PID", ex);
         } finally {
             if (fw != null) {
                 try {

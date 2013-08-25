@@ -102,11 +102,11 @@ public class RconSender implements Runnable {
                     try {
                         this.rconSock.close();
                     } catch (IOException ex1) {
-                        Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, null, ex1);
+                        Logger.getLogger(RconSender.class.getName()).log(Level.SEVERE, "Failed to close connected socket.", ex1);
                     }
                 }
                 
-                Logger.getLogger(RconSender.class.getName()).log(Level.INFO, "Reconnecting to server.", ex);
+                Logger.getLogger(RconSender.class.getName()).log(Level.WARNING, "Sending failed, connection lost. Reconnecting to rcon.", ex);
             }
         }
         
@@ -153,14 +153,13 @@ public class RconSender implements Runnable {
             InputStream in = this.rconSock.getInputStream();
 
             // Unfortunately, we don't have lazy evaluation here...
-            if (Logger.getGlobal().getLevel().intValue() <= Level.FINEST.intValue()) {
+            if (Main.LOG.getLevel().intValue() <= Level.FINEST.intValue()) {
                 Logger.getLogger(RconSender.class.getName()).finest("Tx: " + bytesToHex(packet));
             }
             out.write(packet);
             
             in.read(inputBuffer);
-            System.out.println("Rx: " + bytesToHex(inputBuffer));
-            if (Logger.getGlobal().getLevel().intValue() <= Level.FINEST.intValue()) {
+            if (Main.LOG.getLevel().intValue() <= Level.FINEST.intValue()) {
                 Logger.getLogger(RconSender.class.getName()).finest("Rx: " + bytesToHex(inputBuffer));
             }
         }
